@@ -17,7 +17,7 @@ export default function Navbar({ title, showAlertBadge }) {
 
     return (
         <nav className="sticky top-0 z-50 bg-ocean shadow-lg shadow-ocean/20 safe-area-top">
-            <div className="max-w-5xl mx-auto flex items-center justify-between h-[56px] sm:h-[60px] px-3 sm:px-4 lg:px-6">
+            <div className="w-full flex items-center justify-between h-[56px] sm:h-[60px] px-3 sm:px-4 lg:px-6">
                 <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                     <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-aqua to-safe flex items-center justify-center shadow-md shadow-aqua/20 flex-shrink-0 overflow-hidden">
                         <img src={logo} alt="CoastalGuard Logo" className="w-full h-full object-cover" />

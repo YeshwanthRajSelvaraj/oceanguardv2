@@ -36,147 +36,570 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-dvh flex items-center justify-center relative overflow-hidden bg-slate-900">
-            {/* ── Background ── */}
-            <div className="absolute inset-0 bg-gradient-to-br from-[#061e33] via-ocean-dark to-ocean" />
+        <>
+            <style>{`
+                /* ── Root ── */
+                .lp-root {
+                    min-height: 100dvh;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    position: relative;
+                    overflow: hidden;
+                    background: #05121f;
+                    font-family: 'Inter', system-ui, sans-serif;
+                }
 
-            {/* Animated Background Elements */}
-            <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-aqua/[0.07] blur-[100px] animate-pulse" style={{ animationDuration: '8s' }} />
-            <div className="absolute bottom-[-15%] left-[-10%] w-[400px] h-[400px] rounded-full bg-safe/[0.06] blur-[80px] animate-pulse" style={{ animationDuration: '6s' }} />
+                /* ── Layered background ── */
+                .lp-bg {
+                    position: absolute;
+                    inset: 0;
+                    background:
+                        radial-gradient(ellipse 80% 60% at 75% 0%, rgba(28,167,166,0.22) 0%, transparent 60%),
+                        radial-gradient(ellipse 60% 50% at 10% 90%, rgba(42,157,143,0.15) 0%, transparent 55%),
+                        linear-gradient(175deg, #061828 0%, #0a3248 45%, #07243a 100%);
+                }
 
-            {/* Wave Decoration */}
-            <div className="absolute bottom-0 left-0 right-0 overflow-hidden pointer-events-none opacity-20">
-                <svg className="w-[200%] animate-wave" viewBox="0 0 2880 320" preserveAspectRatio="none" style={{ height: '180px' }}>
-                    <path fill="rgba(28, 167, 166, 0.3)" d="M0,192L60,197.3C120,203,240,213,360,229.3C480,245,600,267,720,250.7C840,235,960,181,1080,181.3C1200,181,1320,235,1440,234.7C1560,235,1680,181,1800,154.7L1920,128L1920,320L0,320Z" />
-                </svg>
-            </div>
+                /* subtle dot grid */
+                .lp-dots {
+                    position: absolute;
+                    inset: 0;
+                    background-image: radial-gradient(rgba(28,167,166,0.12) 1px, transparent 1px);
+                    background-size: 28px 28px;
+                    mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, black, transparent);
+                }
 
-            {/* ── Content ── */}
-            <div className="relative z-10 w-full px-4 sm:px-6 py-6 sm:py-10 flex flex-col items-center">
+                /* ── Floating orbs ── */
+                .lp-orb1 {
+                    position: absolute;
+                    width: 420px; height: 420px;
+                    border-radius: 50%;
+                    background: radial-gradient(circle, rgba(28,167,166,0.15) 0%, transparent 70%);
+                    top: -120px; right: -80px;
+                    animation: lpFloat 8s ease-in-out infinite;
+                    pointer-events: none;
+                }
+                .lp-orb2 {
+                    position: absolute;
+                    width: 320px; height: 320px;
+                    border-radius: 50%;
+                    background: radial-gradient(circle, rgba(42,157,143,0.12) 0%, transparent 70%);
+                    bottom: -80px; left: -60px;
+                    animation: lpFloat 10s ease-in-out infinite reverse;
+                    pointer-events: none;
+                }
+
+                /* ── Wave ── */
+                .lp-wave {
+                    position: absolute;
+                    bottom: 0; left: 0; right: 0;
+                    pointer-events: none;
+                    line-height: 0;
+                }
+
+                /* ── Language switcher ── */
+                .lp-lang {
+                    position: absolute;
+                    top: 18px; right: 18px;
+                    z-index: 100;
+                }
+
+                /* ── Content ── */
+                .lp-content {
+                    position: relative;
+                    z-index: 10;
+                    width: 100%;
+                    max-width: 420px;
+                    padding: 28px 20px 32px;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                }
+
+                /* ── Logo section ── */
+                .lp-logo {
+                    text-align: center;
+                    margin-bottom: 32px;
+                    animation: lpFadeUp 0.7s cubic-bezier(.16,1,.3,1) both;
+                }
+
+                .lp-logo-ring {
+                    width: 82px; height: 82px;
+                    margin: 0 auto 18px;
+                    border-radius: 24px;
+                    background: linear-gradient(145deg, #1CA7A6, #2A9D8F);
+                    box-shadow:
+                        0 20px 50px rgba(28,167,166,0.4),
+                        0 0 0 1px rgba(28,167,166,0.25),
+                        inset 0 1px 0 rgba(255,255,255,0.2);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 5px;
+                    position: relative;
+                }
+
+                .lp-logo-ring::before {
+                    content: '';
+                    position: absolute;
+                    inset: -4px;
+                    border-radius: 28px;
+                    background: linear-gradient(145deg, rgba(28,167,166,0.35), transparent 60%);
+                    z-index: -1;
+                }
+
+                .lp-logo-ring img {
+                    width: 100%; height: 100%;
+                    object-fit: contain;
+                    border-radius: 18px;
+                }
+
+                .lp-title {
+                    font-size: 36px;
+                    font-weight: 900;
+                    color: #fff;
+                    letter-spacing: -0.8px;
+                    line-height: 1;
+                    margin: 0 0 10px;
+                }
+
+                .lp-tagline {
+                    font-size: 10px;
+                    font-weight: 700;
+                    letter-spacing: 0.22em;
+                    text-transform: uppercase;
+                    color: #1CA7A6;
+                    opacity: 0.9;
+                }
+
+                /* ── Card ── */
+                .lp-card {
+                    width: 100%;
+                    border-radius: 28px;
+                    overflow: hidden;
+                    box-shadow:
+                        0 40px 100px rgba(0,0,0,0.55),
+                        0 0 0 1px rgba(255,255,255,0.08),
+                        inset 0 1px 0 rgba(255,255,255,0.12);
+                    animation: lpFadeUp 0.7s cubic-bezier(.16,1,.3,1) 0.12s both;
+                }
+
+                /* top stripe accent */
+                .lp-card-stripe {
+                    height: 3px;
+                    background: linear-gradient(90deg, #1CA7A6, #2A9D8F, #1CA7A6);
+                    background-size: 200% 100%;
+                    animation: lpShimmer 3s ease-in-out infinite;
+                }
+
+                .lp-card-body {
+                    background: rgba(10,40,65,0.6);
+                    backdrop-filter: blur(28px);
+                    -webkit-backdrop-filter: blur(28px);
+                    padding: 28px 26px 24px;
+                }
+
+                /* ── Error ── */
+                .lp-error {
+                    background: rgba(230,57,70,0.1);
+                    border: 1px solid rgba(230,57,70,0.25);
+                    color: #f08080;
+                    font-size: 12px;
+                    font-weight: 700;
+                    padding: 11px 14px;
+                    border-radius: 13px;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    margin-bottom: 18px;
+                }
+
+                /* ── Form ── */
+                .lp-form { display: flex; flex-direction: column; gap: 16px; }
+
+                .lp-label {
+                    display: block;
+                    font-size: 10px;
+                    font-weight: 800;
+                    text-transform: uppercase;
+                    letter-spacing: 0.1em;
+                    color: rgba(255,255,255,0.32);
+                    margin-bottom: 7px;
+                    padding-left: 2px;
+                }
+
+                .lp-input-wrap { position: relative; }
+
+                .lp-input {
+                    width: 100%;
+                    box-sizing: border-box;
+                    background: rgba(0,0,0,0.28);
+                    border: 1px solid rgba(255,255,255,0.09);
+                    border-radius: 14px;
+                    padding: 15px 18px;
+                    font-size: 14px;
+                    font-family: inherit;
+                    color: #fff;
+                    outline: none;
+                    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+                }
+
+                .lp-input::placeholder { color: rgba(255,255,255,0.18); }
+
+                .lp-input:focus {
+                    border-color: rgba(28,167,166,0.65);
+                    background: rgba(0,0,0,0.4);
+                    box-shadow: 0 0 0 3px rgba(28,167,166,0.13), 0 4px 16px rgba(0,0,0,0.2);
+                }
+
+                .lp-input-pr { padding-right: 48px; }
+
+                .lp-eye {
+                    position: absolute;
+                    right: 14px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    background: none;
+                    border: none;
+                    cursor: pointer;
+                    color: rgba(255,255,255,0.28);
+                    display: flex;
+                    padding: 4px;
+                    transition: color 0.2s;
+                }
+                .lp-eye:hover { color: rgba(255,255,255,0.7); }
+
+                /* ── Sign In button ── */
+                .lp-signin {
+                    width: 100%;
+                    margin-top: 6px;
+                    padding: 16px;
+                    border: none;
+                    border-radius: 14px;
+                    background: linear-gradient(135deg, #1CA7A6 0%, #22b8a8 50%, #2A9D8F 100%);
+                    color: #fff;
+                    font-size: 14px;
+                    font-weight: 800;
+                    font-family: inherit;
+                    letter-spacing: 0.03em;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    transition: box-shadow 0.2s, transform 0.15s;
+                    box-shadow: 0 10px 28px rgba(28,167,166,0.38), inset 0 1px 0 rgba(255,255,255,0.2);
+                }
+                .lp-signin:hover:not(:disabled) {
+                    box-shadow: 0 14px 36px rgba(28,167,166,0.48);
+                    transform: translateY(-1px);
+                }
+                .lp-signin:active:not(:disabled) { transform: scale(0.98); }
+                .lp-signin:disabled { opacity: 0.58; cursor: not-allowed; }
+
+                .lp-spin {
+                    width: 16px; height: 16px;
+                    border: 2.5px solid rgba(255,255,255,0.3);
+                    border-top-color: #fff;
+                    border-radius: 50%;
+                    animation: lpSpin 0.65s linear infinite;
+                }
+
+                /* ── Divider ── */
+                .lp-divider {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    margin: 22px 0 18px;
+                }
+                .lp-divider-line { flex: 1; height: 1px; background: rgba(255,255,255,0.07); }
+                .lp-divider-text {
+                    font-size: 9px;
+                    font-weight: 800;
+                    color: rgba(255,255,255,0.22);
+                    text-transform: uppercase;
+                    letter-spacing: 0.16em;
+                    white-space: nowrap;
+                }
+
+                /* ── Register buttons ── */
+                .lp-reg-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 10px;
+                }
+
+                .lp-reg-btn {
+                    padding: 15px 12px;
+                    background: rgba(255,255,255,0.03);
+                    border: 1px solid rgba(255,255,255,0.07);
+                    border-radius: 16px;
+                    cursor: pointer;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 9px;
+                    transition: all 0.22s cubic-bezier(.16,1,.3,1);
+                    font-family: inherit;
+                }
+
+                .lp-reg-btn.fish:hover {
+                    background: rgba(28,167,166,0.09);
+                    border-color: rgba(28,167,166,0.28);
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 24px rgba(28,167,166,0.12);
+                }
+                .lp-reg-btn.auth:hover {
+                    background: rgba(42,157,143,0.09);
+                    border-color: rgba(42,157,143,0.28);
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 24px rgba(42,157,143,0.12);
+                }
+
+                .lp-reg-ico {
+                    width: 38px; height: 38px;
+                    border-radius: 11px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: transform 0.2s;
+                }
+                .lp-reg-btn:hover .lp-reg-ico { transform: scale(1.12); }
+
+                .lp-reg-btn.fish .lp-reg-ico { background: rgba(28,167,166,0.13); color: #1CA7A6; }
+                .lp-reg-btn.auth .lp-reg-ico { background: rgba(42,157,143,0.13); color: #2A9D8F; }
+
+                .lp-reg-lbl {
+                    font-size: 10px;
+                    font-weight: 700;
+                    color: rgba(255,255,255,0.38);
+                    text-align: center;
+                    line-height: 1.35;
+                    transition: color 0.2s;
+                }
+                .lp-reg-btn:hover .lp-reg-lbl { color: rgba(255,255,255,0.85); }
+
+                /* ── Demo section ── */
+                .lp-demo {
+                    background: rgba(0,0,0,0.32);
+                    border-top: 1px solid rgba(255,255,255,0.05);
+                    padding: 18px 26px 22px;
+                }
+
+                .lp-demo-title {
+                    font-size: 9px;
+                    font-weight: 800;
+                    color: rgba(255,255,255,0.18);
+                    text-transform: uppercase;
+                    letter-spacing: 0.2em;
+                    text-align: center;
+                    margin-bottom: 13px;
+                }
+
+                .lp-demo-row {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 8px;
+                }
+
+                .lp-demo-item {
+                    padding: 11px 13px;
+                    background: rgba(255,255,255,0.03);
+                    border: 1px solid rgba(255,255,255,0.06);
+                    border-radius: 13px;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 6px;
+                    font-family: inherit;
+                    transition: all 0.2s;
+                    text-align: left;
+                }
+                .lp-demo-item.fish:hover {
+                    background: rgba(28,167,166,0.08);
+                    border-color: rgba(28,167,166,0.22);
+                }
+                .lp-demo-item.auth:hover {
+                    background: rgba(42,157,143,0.08);
+                    border-color: rgba(42,157,143,0.22);
+                }
+
+                .lp-demo-name {
+                    font-size: 11px;
+                    font-weight: 800;
+                    margin-bottom: 3px;
+                }
+                .lp-demo-item.fish .lp-demo-name { color: #1CA7A6; }
+                .lp-demo-item.auth .lp-demo-name { color: #2A9D8F; }
+
+                .lp-demo-pw {
+                    font-size: 9px;
+                    font-family: monospace;
+                    color: rgba(255,255,255,0.2);
+                }
+
+                .lp-demo-arr {
+                    font-size: 15px;
+                    color: rgba(255,255,255,0.13);
+                    transition: color 0.2s, transform 0.2s;
+                    flex-shrink: 0;
+                }
+                .lp-demo-item.fish:hover .lp-demo-arr { color: #1CA7A6; transform: translateX(2px); }
+                .lp-demo-item.auth:hover .lp-demo-arr { color: #2A9D8F; transform: translateX(2px); }
+
+                /* ── Footer text ── */
+                .lp-footer-txt {
+                    margin-top: 22px;
+                    font-size: 10px;
+                    color: rgba(255,255,255,0.16);
+                    text-align: center;
+                    font-weight: 500;
+                }
+
+                /* ── Animations ── */
+                @keyframes lpFadeUp {
+                    from { opacity: 0; transform: translateY(22px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes lpFloat {
+                    0%, 100% { transform: translateY(0); }
+                    50%      { transform: translateY(-18px); }
+                }
+                @keyframes lpSpin {
+                    to { transform: rotate(360deg); }
+                }
+                @keyframes lpShimmer {
+                    0%   { background-position: 200% 0; }
+                    100% { background-position: -200% 0; }
+                }
+            `}</style>
+
+            <div className="lp-root">
+                <div className="lp-bg" />
+                <div className="lp-dots" />
+                <div className="lp-orb1" />
+                <div className="lp-orb2" />
+
+                {/* Wave */}
+                <div className="lp-wave">
+                    <svg viewBox="0 0 1440 100" preserveAspectRatio="none" style={{ width: '100%', height: '80px', display: 'block' }}>
+                        <path fill="rgba(28,167,166,0.1)" d="M0,50L80,56C160,62,320,74,480,72C640,70,800,54,960,50C1120,46,1280,54,1360,58L1440,62L1440,100L0,100Z" />
+                        <path fill="rgba(28,167,166,0.06)" d="M0,70L120,62C240,54,480,38,720,40C960,42,1200,64,1320,72L1440,80L1440,100L0,100Z" />
+                    </svg>
+                </div>
 
                 {/* Language Switcher */}
-                <div className="w-full max-w-[480px] flex justify-end mb-4 sm:mb-6">
+                <div className="lp-lang">
                     <LanguageSwitcher />
                 </div>
 
-                {/* Logo Section */}
-                <div className="text-center mb-6 sm:mb-8">
-                    <div className="w-[72px] h-[72px] sm:w-[88px] sm:h-[88px] mx-auto mb-4 sm:mb-5 rounded-2xl bg-gradient-to-br from-aqua to-safe flex items-center justify-center shadow-lg shadow-aqua/20 animate-float overflow-hidden p-1">
-                        <img src={logo} alt="CoastalGuard Logo" className="w-full h-full object-contain drop-shadow-md" />
-                    </div>
-                    <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">{t('app.name')}</h1>
-                    <p className="text-aqua text-sm sm:text-base font-semibold mt-1.5 sm:mt-2 tracking-wide opacity-90">{t('app.tagline')}</p>
-                </div>
+                <div className="lp-content">
 
-                {/* ── Login Card ── */}
-                <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-[24px] sm:rounded-[32px] p-6 sm:p-8 md:p-10 shadow-2xl w-full max-w-[480px]">
-                    <form onSubmit={handleLogin} className="space-y-4 sm:space-y-6">
-                        {error && (
-                            <div className="bg-danger/10 border border-danger/20 text-danger-light text-sm font-semibold px-4 py-3 rounded-xl flex items-center gap-2">
-                                <AlertCircle className="w-5 h-5 shrink-0" />
-                                {error}
-                            </div>
-                        )}
-
-                        {/* Email */}
-                        <div className="space-y-2.5">
-                            <label htmlFor="login-email" className="block text-xs font-bold text-slate-300 uppercase tracking-[0.08em] pl-1">{t('login.emailLabel')}</label>
-                            <input
-                                id="login-email"
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder={t('login.emailPlaceholder')}
-                                required
-                                className="w-full bg-black/20 border border-white/10 rounded-xl px-4 sm:px-5 py-3 sm:py-4 text-[15px] sm:text-base text-white placeholder-white/30 focus:border-aqua focus:ring-1 focus:ring-aqua/50 transition-all outline-none"
-                            />
+                    {/* Logo */}
+                    <div className="lp-logo">
+                        <div className="lp-logo-ring">
+                            <img src={logo} alt="CoastalGuard" />
                         </div>
+                        <h1 className="lp-title">{t('app.name')}</h1>
+                        <p className="lp-tagline">{t('app.tagline')}</p>
+                    </div>
 
-                        {/* Password */}
-                        <div className="space-y-2.5">
-                            <label htmlFor="login-pass" className="block text-xs font-bold text-slate-300 uppercase tracking-[0.08em] pl-1">{t('login.passwordLabel')}</label>
-                            <div className="relative">
-                                <input
-                                    id="login-pass"
-                                    type={showPassword ? 'text' : 'password'}
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder={t('login.passwordPlaceholder')}
-                                    required
-                                    className="w-full bg-black/20 border border-white/10 rounded-xl px-4 sm:px-5 py-3 sm:py-4 text-[15px] sm:text-base text-white placeholder-white/30 focus:border-aqua focus:ring-1 focus:ring-aqua/50 transition-all outline-none pr-12"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors p-1"
-                                >
-                                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    {/* Card */}
+                    <div className="lp-card">
+                        <div className="lp-card-stripe" />
+
+                        <div className="lp-card-body">
+                            {error && (
+                                <div className="lp-error">
+                                    <AlertCircle size={15} style={{ flexShrink: 0 }} />
+                                    {error}
+                                </div>
+                            )}
+
+                            <form onSubmit={handleLogin} className="lp-form">
+                                <div>
+                                    <label className="lp-label">{t('login.emailLabel')}</label>
+                                    <div className="lp-input-wrap">
+                                        <input
+                                            type="email"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            placeholder={t('login.emailPlaceholder')}
+                                            required
+                                            className="lp-input"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="lp-label">{t('login.passwordLabel')}</label>
+                                    <div className="lp-input-wrap">
+                                        <input
+                                            type={showPassword ? 'text' : 'password'}
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            placeholder={t('login.passwordPlaceholder')}
+                                            required
+                                            className="lp-input lp-input-pr"
+                                        />
+                                        <button type="button" className="lp-eye" onClick={() => setShowPassword(!showPassword)}>
+                                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <button type="submit" disabled={loading} className="lp-signin">
+                                    {loading
+                                        ? <><div className="lp-spin" /><span>{t('login.signingIn')}</span></>
+                                        : <span>{t('login.signIn')}</span>
+                                    }
+                                </button>
+                            </form>
+
+                            <div className="lp-divider">
+                                <div className="lp-divider-line" />
+                                <span className="lp-divider-text">{t('login.newHere')}</span>
+                                <div className="lp-divider-line" />
+                            </div>
+
+                            <div className="lp-reg-grid">
+                                <button className="lp-reg-btn fish" onClick={() => navigate('/register/fisherman')}>
+                                    <div className="lp-reg-ico"><Anchor size={18} /></div>
+                                    <span className="lp-reg-lbl">{t('login.registerFisherman')}</span>
+                                </button>
+                                <button className="lp-reg-btn auth" onClick={() => navigate('/register/authority')}>
+                                    <div className="lp-reg-ico"><Shield size={18} /></div>
+                                    <span className="lp-reg-lbl">{t('login.registerAuthority')}</span>
                                 </button>
                             </div>
                         </div>
 
-                        {/* Login Button */}
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full py-3.5 sm:py-4 bg-gradient-to-r from-aqua to-safe hover:from-aqua-light hover:to-safe-light text-white text-[15px] sm:text-base font-bold rounded-xl shadow-lg shadow-aqua/25 transition-all transform active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-4 sm:mt-6"
-                        >
-                            {loading ? (
-                                <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /><span>{t('login.signingIn')}</span></>
-                            ) : (
-                                <span>{t('login.signIn')}</span>
-                            )}
-                        </button>
-                    </form>
-
-                    {/* Divider */}
-                    <div className="flex items-center gap-3 sm:gap-4 my-6 sm:my-8">
-                        <div className="flex-1 h-px bg-white/10" />
-                        <span className="text-xs text-white/40 font-semibold uppercase tracking-wider">{t('login.newHere')}</span>
-                        <div className="flex-1 h-px bg-white/10" />
+                        {/* Demo */}
+                        <div className="lp-demo">
+                            <p className="lp-demo-title">⚡ Instant Demo Access</p>
+                            <div className="lp-demo-row">
+                                <button className="lp-demo-item fish" onClick={() => { setEmail('fisher@coastalguard.in'); setPassword('fisher123'); }}>
+                                    <div>
+                                        <p className="lp-demo-name">🎣 Fisherman</p>
+                                        <p className="lp-demo-pw">fisher123</p>
+                                    </div>
+                                    <span className="lp-demo-arr">→</span>
+                                </button>
+                                <button className="lp-demo-item auth" onClick={() => { setEmail('officer@coastalguard.in'); setPassword('officer123'); }}>
+                                    <div>
+                                        <p className="lp-demo-name">🛡️ Authority</p>
+                                        <p className="lp-demo-pw">officer123</p>
+                                    </div>
+                                    <span className="lp-demo-arr">→</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Registration Buttons */}
-                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                        <button onClick={() => navigate('/register/fisherman')} className="group py-3 sm:py-4 border border-white/10 rounded-xl hover:bg-white/5 transition-all flex flex-col items-center gap-1.5 sm:gap-2">
-                            <Anchor className="w-5 h-5 sm:w-6 sm:h-6 text-aqua group-hover:scale-110 transition-transform" />
-                            <span className="text-[10px] sm:text-xs font-bold text-slate-300 group-hover:text-white">{t('login.registerFisherman')}</span>
-                        </button>
-                        <button onClick={() => navigate('/register/authority')} className="group py-3 sm:py-4 border border-white/10 rounded-xl hover:bg-white/5 transition-all flex flex-col items-center gap-1.5 sm:gap-2">
-                            <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-safe group-hover:scale-110 transition-transform" />
-                            <span className="text-[10px] sm:text-xs font-bold text-slate-300 group-hover:text-white">{t('login.registerAuthority')}</span>
-                        </button>
-                    </div>
+                    <p className="lp-footer-txt">{t('app.copyright')}</p>
                 </div>
-
-                {/* Demo Accounts */}
-                <div className="mt-8 text-center bg-black/30 border border-white/10 rounded-2xl p-5 w-full max-w-[480px] backdrop-blur-sm">
-                    <p className="text-[10px] font-bold text-white/50 uppercase tracking-[0.15em] mb-4">Instant Demo Access</p>
-                    <div className="grid grid-cols-2 gap-4">
-                        <button
-                            onClick={() => { setEmail('fisher@coastalguard.in'); setPassword('fisher123'); }}
-                            className="flex flex-col items-center gap-1 group p-2 rounded-xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/5"
-                        >
-                            <span className="text-xs font-mono text-aqua font-bold group-hover:text-aqua-light transition-colors">Fisherman</span>
-                            <span className="text-[10px] text-slate-400">fisher@coastalguard.in</span>
-                            <span className="text-[10px] text-slate-500 font-mono bg-white/5 px-2 py-0.5 rounded text-opacity-70 group-hover:text-opacity-100 transition-all">Pass: fisher123</span>
-                        </button>
-
-                        <button
-                            onClick={() => { setEmail('officer@coastalguard.in'); setPassword('officer123'); }}
-                            className="flex flex-col items-center gap-1 group p-2 rounded-xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/5"
-                        >
-                            <span className="text-xs font-mono text-safe font-bold group-hover:text-safe-light transition-colors">Authority</span>
-                            <span className="text-[10px] text-slate-400">officer@coastalguard.in</span>
-                            <span className="text-[10px] text-slate-500 font-mono bg-white/5 px-2 py-0.5 rounded text-opacity-70 group-hover:text-opacity-100 transition-all">Pass: officer123</span>
-                        </button>
-                    </div>
-                </div>
-
-                <p className="text-center text-[10px] text-white/20 mt-8 font-medium">
-                    {t('app.copyright')}
-                </p>
             </div>
-        </div>
+        </>
     );
 }

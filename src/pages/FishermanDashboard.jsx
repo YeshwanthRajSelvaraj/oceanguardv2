@@ -6,14 +6,13 @@ import { useTranslation } from '../contexts/TranslationContext';
 import Navbar from '../components/Navbar';
 import StatusBadge from '../components/StatusBadge';
 import MapView from '../components/MapView';
-import AlertBanner from '../components/AlertBanner';
 import ActionButton from '../components/ActionButton';
 import SOSStatusPanel from '../components/SOSStatusPanel';
 import WeatherWidget from '../components/WeatherWidget';
 import NMEAConsole from '../components/NMEAConsole';
 import ProximityChat from '../components/ProximityChat';
 import { watchPosition, getBoatStatus, formatDistance, formatCoord } from '../services/locationService';
-import { Radio, MessageSquare, Terminal } from 'lucide-react';
+import { Radio, Terminal, X } from 'lucide-react';
 
 export default function FishermanDashboard() {
     const { user } = useAuth();
@@ -27,7 +26,7 @@ export default function FishermanDashboard() {
     const [showFishZones, setShowFishZones] = useState(false);
     const [showSosConfirm, setShowSosConfirm] = useState(false);
     const [sosSent, setSosSent] = useState(false);
-    const [sosDeliveryState, setSOSDeliveryState] = useState(null); // 'sending' | 'delivered' | 'cached'
+    const [sosDeliveryState, setSOSDeliveryState] = useState(null);
     const [alertDismissed, setAlertDismissed] = useState(false);
     const [shareMsg, setShareMsg] = useState('');
     const [showSOSPanel, setShowSOSPanel] = useState(false);
@@ -45,7 +44,6 @@ export default function FishermanDashboard() {
         return stop;
     }, []);
 
-    // Border alert — uses both legacy + SOS engine
     useEffect(() => {
         if (boatStatus.status === 'danger' && prevStatusRef.current !== 'danger' && !borderAlertSentRef.current) {
             borderAlertSentRef.current = true;
@@ -57,20 +55,15 @@ export default function FishermanDashboard() {
         prevStatusRef.current = boatStatus.status;
     }, [boatStatus.status, location, user, sendBorder, triggerBorderAlert]);
 
-    // SOS handler — now goes through multi-channel engine
     useEffect(() => {
         const handlePeerSOS = (e) => {
             const sos = e.detail;
-            console.log("Dashboard: Peer SOS Received", sos);
-            // Show alert or update UI
             alert(`🚨 SOS RECEIVED FROM ${sos.boatNumber} 🚨\nSee Map/Chat for details.`);
-            // You could also set state to show a specific overlay
         };
         window.addEventListener('cg_sos_received', handlePeerSOS);
         return () => window.removeEventListener('cg_sos_received', handlePeerSOS);
     }, []);
 
-    // Track SOS delivery state from context
     useEffect(() => {
         if (lastSOS) {
             if (lastSOS.event === 'sos_delivered') {
@@ -84,22 +77,13 @@ export default function FishermanDashboard() {
         }
     }, [lastSOS]);
 
-    // SOS handler — now goes through multi-channel engine
     const handleSOS = useCallback(async () => {
         if (!location) return;
         setShowSosConfirm(false);
         setSosSent(true);
         setShowSOSPanel(true);
         setSOSDeliveryState('sending');
-
-        await triggerSOS({
-            type: 'sos',
-            fishermanId: user.id,
-            fishermanName: user.fullName,
-            boatNumber: user.boatNumber,
-            location,
-        });
-
+        await triggerSOS({ type: 'sos', fishermanId: user.id, fishermanName: user.fullName, boatNumber: user.boatNumber, location });
         setTimeout(() => setSosSent(false), 8000);
     }, [location, user, triggerSOS]);
 
@@ -110,271 +94,310 @@ export default function FishermanDashboard() {
     }, [location, t]);
 
     return (
-        <div className="min-h-dvh bg-slate-950 flex flex-col relative overflow-hidden">
-            {/* Background Texture */}
+        <div className="h-dvh bg-slate-950 flex flex-col relative overflow-hidden">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(6,182,212,0.1),rgba(0,0,0,0)_50%)] pointer-events-none" />
             <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'linear-gradient(#06b6d4 1px, transparent 1px), linear-gradient(90deg, #06b6d4 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
 
             <Navbar />
 
-            {/* Overlays */}
-            <NMEAConsole isOpen={showNMEA} onClose={() => setShowNMEA(false)} />
-
-            {/* Fullscreen Chat Overlay */}
+            {/* ── Mesh Chat Modal ── */}
             {showChat && (
-                <div className="fixed inset-0 z-50 animate-slide-up">
-                    <ProximityChat />
-                    <button
-                        onClick={() => setShowChat(false)}
-                        className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full z-50 hover:bg-black/70 border border-white/10"
-                    >
-                        ✕
-                    </button>
-                </div>
-            )}
-
-            {/* SOS Delivery Banner */}
-            <div className="px-3 sm:px-4 lg:px-6 pt-3 sm:pt-4 space-y-2 sm:space-y-3">
-                {sosSent && sosDeliveryState === 'delivered' && (
-                    <div className="animate-slide-down bg-emerald-950/90 border border-emerald-500/50 rounded-xl p-4 shadow-[0_0_30px_rgba(16,185,129,0.2)] backdrop-blur-md flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30">
-                            <span className="text-lg">✅</span>
-                        </div>
-                        <div>
-                            <p className="text-emerald-400 font-bold text-sm tracking-wide uppercase">SOS Delivered</p>
-                            <p className="text-emerald-200/70 text-xs">Via {lastSOS?.sos?.delivery?.channel || 'Secure Mesh'}</p>
-                        </div>
-                    </div>
-                )}
-                {sosSent && sosDeliveryState === 'cached' && (
-                    <div className="animate-slide-down bg-amber-950/90 border border-amber-500/50 rounded-xl p-4 shadow-[0_0_30px_rgba(245,158,11,0.2)] backdrop-blur-md flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center border border-amber-500/30">
-                            <span className="text-lg animate-pulse">📦</span>
-                        </div>
-                        <div>
-                            <p className="text-amber-400 font-bold text-sm tracking-wide uppercase">Stored Offline</p>
-                            <p className="text-amber-200/70 text-xs">Will auto-transmit when signal detected</p>
-                        </div>
-                    </div>
-                )}
-                {sosSent && sosDeliveryState === 'sending' && (
-                    <div className="animate-slide-down bg-rose-950/90 border border-rose-500/50 rounded-xl p-4 shadow-[0_0_30px_rgba(244,63,94,0.2)] backdrop-blur-md flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-rose-500/20 flex items-center justify-center border border-rose-500/30">
-                            <div className="w-4 h-4 border-2 border-rose-400 border-t-transparent rounded-full animate-spin" />
-                        </div>
-                        <div>
-                            <p className="text-rose-400 font-bold text-sm tracking-wide uppercase">Transmitting SOS</p>
-                            <p className="text-rose-200/70 text-xs">Scanning all available frequencies...</p>
-                        </div>
-                    </div>
-                )}
-
-                {/* Border Alerts */}
-                {!sosSent && !alertDismissed && boatStatus.status === 'warning' && (
-                    <div className="animate-fade-in bg-amber-950/40 border border-amber-500/30 rounded-xl p-3 flex justify-between items-center backdrop-blur-sm">
-                        <span className="text-amber-400 text-xs font-bold tracking-widest uppercase flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                            Approaching Border
-                        </span>
-                        <button onClick={() => setAlertDismissed(true)} className="text-amber-500/50 hover:text-amber-400">✕</button>
-                    </div>
-                )}
-                {!sosSent && !alertDismissed && boatStatus.status === 'danger' && (
-                    <div className="animate-fade-in bg-rose-950/60 border border-rose-500/50 rounded-xl p-3 flex justify-between items-center backdrop-blur-sm shadow-[0_0_20px_rgba(244,63,94,0.15)]">
-                        <span className="text-rose-400 text-xs font-bold tracking-widest uppercase flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
-                            Boundary Crossed
-                        </span>
-                        <button onClick={() => setAlertDismissed(true)} className="text-rose-500/50 hover:text-rose-400">✕</button>
-                    </div>
-                )}
-            </div>
-
-            {shareMsg && (
-                <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-cyan-950/90 border border-cyan-500/50 text-cyan-400 px-6 py-3 rounded-full shadow-[0_0_30px_rgba(6,182,212,0.3)] backdrop-blur-xl text-xs font-bold tracking-widest uppercase animate-slide-down flex items-center gap-2">
-                    <span className="text-lg">📍</span>
-                    {shareMsg}
-                </div>
-            )}
-
-            <div className="flex-1 w-full max-w-5xl mx-auto space-y-4 sm:space-y-5">
-                {/* Status Card + Channel Status */}
-                <div className="px-3 sm:px-4 lg:px-6">
-                    <div className="bg-slate-900/40 border border-white/5 rounded-2xl sm:rounded-3xl p-4 sm:p-6 backdrop-blur-md relative overflow-hidden group">
-                        <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-transparent to-blue-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-
-                        <div className="flex items-start justify-between relative z-10">
-                            <div className="space-y-1">
-                                <p className="text-[8px] sm:text-[9px] font-bold text-cyan-500/60 uppercase tracking-[0.2em] mb-1">Vessel ID</p>
-                                <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tighter leading-none bg-gradient-to-br from-white via-cyan-100 to-cyan-400 bg-clip-text text-transparent">
-                                    {user?.boatNumber || 'N/A'}
-                                </h1>
-                                <p className="text-xs text-slate-400 font-medium tracking-wide flex items-center gap-1">
-                                    <span className="w-1 h-1 rounded-full bg-slate-500" />
-                                    {user?.fullName}
-                                </p>
-                            </div>
-                            <div className="flex flex-col items-end gap-3">
-                                <StatusBadge status={boatStatus.status} large />
-                                <SOSStatusPanel compact />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {locError && (
-                    <div className="px-3 sm:px-4 lg:px-6 animate-fade-in">
-                        <div className="bg-slate-900/50 border border-rose-500/20 rounded-xl px-4 py-2 text-[10px] font-mono text-rose-300/80 flex items-center gap-2">
-                            <span className="text-rose-500">⚠</span>
-                            SIMULATION MODE: {locError}
-                        </div>
-                    </div>
-                )}
-
-                <div className="px-3 sm:px-4 lg:px-6 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-                    <div className="relative rounded-xl sm:rounded-2xl overflow-hidden border border-white/10 shadow-2xl shadow-black/50">
-                        <div className="absolute inset-0 z-20 pointer-events-none shadow-[inset_0_0_40px_rgba(0,0,0,0.5)]" />
-                        {/* Scanline effect */}
-                        <div className="absolute inset-0 z-20 pointer-events-none bg-[linear-gradient(transparent_50%,rgba(0,0,0,0.2)_50%)] bg-[length:100%_4px]" />
-                        <MapView userLocation={location} showBoundary showFishZones={showFishZones} height="h-[220px] sm:h-[300px] lg:h-[380px]" />
-
-                        {/* Map Overlay Stats */}
-                        <div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 right-2 sm:right-3 z-30 flex gap-1.5 sm:gap-2">
-                            <div className="flex-1 bg-black/80 backdrop-blur border border-white/10 rounded-lg p-1.5 sm:p-2 text-center">
-                                <p className="text-[8px] sm:text-[9px] text-cyan-500/80 font-bold uppercase tracking-wider mb-0.5">Latitude</p>
-                                <p className="text-[10px] sm:text-xs font-mono text-white">{location ? formatCoord(location.lat, 'lat') : '—'}</p>
-                            </div>
-                            <div className="flex-1 bg-black/80 backdrop-blur border border-white/10 rounded-lg p-1.5 sm:p-2 text-center">
-                                <p className="text-[8px] sm:text-[9px] text-cyan-500/80 font-bold uppercase tracking-wider mb-0.5">Longitude</p>
-                                <p className="text-[10px] sm:text-xs font-mono text-white">{location ? formatCoord(location.lng, 'lng') : '—'}</p>
-                            </div>
-                            <div className={`flex-1 backdrop-blur border rounded-lg p-1.5 sm:p-2 text-center ${boatStatus.status === 'safe' ? 'bg-emerald-950/80 border-emerald-500/30' : 'bg-rose-950/80 border-rose-500/30'}`}>
-                                <p className={`text-[8px] sm:text-[9px] font-bold uppercase tracking-wider mb-0.5 ${boatStatus.status === 'safe' ? 'text-emerald-500' : 'text-rose-500'}`}>To Border</p>
-                                <p className={`text-[10px] sm:text-xs font-mono font-bold ${boatStatus.status === 'safe' ? 'text-emerald-400' : 'text-rose-400'}`}>{formatDistance(boatStatus.distance)}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Removed Stats Grid (moved to map overlay) */}
-
-                {location?.accuracy && (
-                    <div className="px-4 pb-3 flex justify-center">
-                        <div className="inline-flex items-center gap-2 bg-safe/8 px-3.5 py-1.5 rounded-full">
-                            <span className="w-[6px] h-[6px] rounded-full bg-safe animate-pulse" />
-                            <span className="text-[11px] font-semibold text-safe">{t('dashboard.gpsActive')} · ±{Math.round(location.accuracy)}m</span>
-                        </div>
-                    </div>
-                )}
-
-                {/* Weather & Sea Conditions */}
-                <div className="px-3 sm:px-4 lg:px-6 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-                    <button
-                        onClick={() => setShowWeather(!showWeather)}
-                        className="w-full flex items-center justify-between py-4 px-5 bg-slate-900/40 rounded-2xl border border-white/5 hover:bg-slate-800/60 hover:border-cyan-500/30 transition-all btn-press group"
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20 group-hover:border-blue-500/50 transition-colors">
-                                <span className="text-lg">�</span>
-                            </div>
-                            <div className="text-left">
-                                <p className="text-sm font-bold text-white group-hover:text-cyan-400 transition-colors">Sea Conditions</p>
-                                <p className="text-[10px] text-slate-400 font-medium">Live Wave & Wind Data</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <WeatherWidget location={location} compact />
-                            <div className={`w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[10px] text-slate-400 transition-transform duration-300 ${showWeather ? 'rotate-180 bg-cyan-500/20 text-cyan-400' : ''}`}>
-                                ▼
-                            </div>
-                        </div>
-                    </button>
-
-                    {showWeather && (
-                        <div className="mt-3 animate-scale-in border-t border-white/5 pt-3">
-                            <WeatherWidget location={location} />
-                        </div>
-                    )}
-                </div>
-
-                {/* SOS Delivery Status Panel (expanded) */}
-                {showSOSPanel && (
-                    <div className="px-3 sm:px-4 lg:px-6 pb-3 animate-scale-in">
-                        <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-[13px] font-extrabold text-text-primary">📡 SOS Delivery Status</h3>
-                            <button
-                                onClick={() => setShowSOSPanel(false)}
-                                className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center text-text-light hover:bg-gray-200 transition-all btn-press text-[12px]"
-                            >✕</button>
-                        </div>
-                        <SOSStatusPanel />
-                    </div>
-                )}
-
-                {/* Pending SOS indicator */}
-                {hasPendingSOS && !showSOSPanel && (
-                    <div className="px-3 sm:px-4 lg:px-6 pb-3 animate-fade-in">
+                <div
+                    style={{
+                        position: 'fixed', inset: 0, zIndex: 9999,
+                        background: 'rgba(0,0,0,0.75)',
+                        backdropFilter: 'blur(6px)',
+                        display: 'flex', alignItems: 'stretch',
+                    }}
+                    onClick={(e) => { if (e.target === e.currentTarget) setShowChat(false); }}
+                >
+                    <div style={{
+                        position: 'relative', width: '100%', maxWidth: '480px',
+                        margin: 'auto',
+                        height: '90dvh',
+                        borderRadius: '20px',
+                        overflow: 'hidden',
+                        boxShadow: '0 30px 80px rgba(0,0,0,0.6)',
+                        border: '1px solid rgba(6,182,212,0.2)',
+                    }}>
                         <button
-                            onClick={() => setShowSOSPanel(true)}
-                            className="w-full py-3 bg-amber-50 border border-amber-200 rounded-2xl text-[12px] font-bold text-amber-800 flex items-center justify-center gap-2 btn-press hover:bg-amber-100 transition-colors"
+                            onClick={() => setShowChat(false)}
+                            style={{
+                                position: 'absolute', top: '12px', right: '12px', zIndex: 10,
+                                width: '32px', height: '32px', borderRadius: '8px',
+                                background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.15)',
+                                color: 'white', cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            }}
                         >
-                            <span>📦</span>
-                            <span>SOS queued offline — Tap to view delivery status</span>
+                            <X size={16} />
                         </button>
+                        <ProximityChat />
                     </div>
-                )}
-            </div>
+                </div>
+            )}
 
-            {/* Bottom Actions */}
-            <div className="sticky bottom-0 bg-slate-950/80 backdrop-blur-xl border-t border-white/10 px-3 sm:px-4 py-3 sm:py-5 safe-area-bottom z-40 pb-8 sm:pb-5">
-                <div className="max-w-lg mx-auto lg:max-w-2xl space-y-2 sm:space-y-3">
-                    {showSosConfirm ? (
-                        <div className="bg-danger/[0.06] border-2 border-danger/25 rounded-[16px] sm:rounded-[20px] p-4 sm:p-5 animate-scale-in">
-                            <p className="text-[14px] sm:text-[15px] font-extrabold text-danger text-center mb-1">{t('dashboard.confirmSOS')}</p>
-                            <p className="text-[11px] sm:text-[12px] text-text-secondary text-center mb-2">{t('dashboard.sosMessage')}</p>
-                            {/* Channel availability preview */}
-                            <div className="flex justify-center gap-3 mb-4">
-                                {Object.entries({ internet: '🌐', satellite: '🛰️', ais: '📡' }).map(([key, icon]) => (
-                                    <div key={key} className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold ${channelAvailability[key] ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-400'}`}>
-                                        <span>{icon}</span>
-                                        <span className={`w-[5px] h-[5px] rounded-full ${channelAvailability[key] ? 'bg-green-500' : 'bg-red-400'}`} />
+            {/* ── NMEA Console Modal ── */}
+            {showNMEA && (
+                <div
+                    style={{
+                        position: 'fixed', inset: 0, zIndex: 9999,
+                        background: 'rgba(0,0,0,0.75)',
+                        backdropFilter: 'blur(6px)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                    onClick={(e) => { if (e.target === e.currentTarget) setShowNMEA(false); }}
+                >
+                    <div style={{
+                        position: 'relative', width: '100%', maxWidth: '600px',
+                        maxHeight: '80dvh',
+                        margin: '20px',
+                        borderRadius: '20px',
+                        overflow: 'hidden',
+                        boxShadow: '0 30px 80px rgba(0,0,0,0.6)',
+                        border: '1px solid rgba(34,197,94,0.2)',
+                    }}>
+                        <button
+                            onClick={() => setShowNMEA(false)}
+                            style={{
+                                position: 'absolute', top: '12px', right: '12px', zIndex: 10,
+                                width: '32px', height: '32px', borderRadius: '8px',
+                                background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.15)',
+                                color: 'white', cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            }}
+                        >
+                            <X size={16} />
+                        </button>
+                        <NMEAConsole isOpen={showNMEA} onClose={() => setShowNMEA(false)} />
+                    </div>
+                </div>
+            )}
+
+            {/* Main Application Shell */}
+            <div className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden relative">
+
+                {/* ─── Map View ─── */}
+                <div className="w-full h-[50dvh] lg:h-full lg:flex-1 relative order-2 lg:order-1 bg-slate-900/50 shrink-0">
+                    <MapView userLocation={location} showBoundary showFishZones={showFishZones} height="h-full" className="rounded-none border-0" />
+
+                    {/* Map coordinate overlays */}
+                    <div className="absolute bottom-4 left-4 right-4 z-[400] flex gap-2 sm:gap-3 pointer-events-none">
+                        <div className="flex-1 max-w-[120px] bg-black/80 backdrop-blur border border-white/10 rounded-lg p-2 text-center pointer-events-auto">
+                            <p className="text-[10px] text-cyan-500/80 font-bold uppercase tracking-wider mb-0.5">Latitude</p>
+                            <p className="text-xs font-mono text-white">{location ? formatCoord(location.lat, 'lat') : '—'}</p>
+                        </div>
+                        <div className="flex-1 max-w-[120px] bg-black/80 backdrop-blur border border-white/10 rounded-lg p-2 text-center pointer-events-auto">
+                            <p className="text-[10px] text-cyan-500/80 font-bold uppercase tracking-wider mb-0.5">Longitude</p>
+                            <p className="text-xs font-mono text-white">{location ? formatCoord(location.lng, 'lng') : '—'}</p>
+                        </div>
+                        <div className={`flex-1 max-w-[140px] backdrop-blur border rounded-lg p-2 text-center pointer-events-auto ${boatStatus.status === 'safe' ? 'bg-emerald-950/80 border-emerald-500/30' : 'bg-rose-950/80 border-rose-500/30'}`}>
+                            <p className={`text-[10px] font-bold uppercase tracking-wider mb-0.5 ${boatStatus.status === 'safe' ? 'text-emerald-500' : 'text-rose-500'}`}>To Border</p>
+                            <p className={`text-xs font-mono font-bold ${boatStatus.status === 'safe' ? 'text-emerald-400' : 'text-rose-400'}`}>{formatDistance(boatStatus.distance)}</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ─── Right Control Panel ─── */}
+                <div className="w-full lg:w-[420px] bg-slate-950/95 backdrop-blur-xl border-t lg:border-t-0 lg:border-l border-white/10 flex flex-col order-1 lg:order-2 z-30 shadow-2xl shrink-0">
+
+                    <div className="flex-1 lg:overflow-y-auto lg:overflow-x-hidden p-4 space-y-4">
+
+                        {/* Status Card */}
+                        <div className="bg-slate-900/40 border border-white/5 rounded-2xl p-5 relative overflow-hidden group">
+                            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-transparent to-blue-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                            <div className="flex items-start justify-between relative z-10">
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-bold text-cyan-500/60 uppercase tracking-[0.2em] mb-1">Vessel ID</p>
+                                    <h1 className="text-3xl font-black text-white tracking-tighter leading-none bg-gradient-to-br from-white via-cyan-100 to-cyan-400 bg-clip-text text-transparent">
+                                        {user?.boatNumber || 'N/A'}
+                                    </h1>
+                                    <p className="text-xs text-slate-400 font-medium tracking-wide flex items-center gap-1">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
+                                        {user?.fullName}
+                                    </p>
+                                </div>
+                                <div className="flex flex-col items-end gap-3">
+                                    <StatusBadge status={boatStatus.status} large />
+                                    <SOSStatusPanel compact />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Alerts */}
+                        <div className="space-y-3">
+                            {sosSent && sosDeliveryState === 'delivered' && (
+                                <div className="animate-slide-down bg-emerald-950/90 border border-emerald-500/50 rounded-xl p-4 shadow-[0_0_30px_rgba(16,185,129,0.2)] flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30"><span className="text-lg">✅</span></div>
+                                    <div>
+                                        <p className="text-emerald-400 font-bold text-sm tracking-wide uppercase">SOS Delivered</p>
+                                        <p className="text-emerald-200/70 text-xs">Via {lastSOS?.sos?.delivery?.channel || 'Secure Mesh'}</p>
                                     </div>
-                                ))}
-                            </div>
-                            <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                                <button onClick={() => setShowSosConfirm(false)} className="py-3 sm:py-3.5 bg-gray-100 text-text-primary font-bold text-[13px] sm:text-[14px] rounded-xl sm:rounded-2xl hover:bg-gray-200 transition-colors btn-press">{t('dashboard.cancel')}</button>
-                                <button onClick={handleSOS} className="py-3 sm:py-3.5 text-white font-bold text-[13px] sm:text-[14px] rounded-xl sm:rounded-2xl btn-gradient-danger">{t('dashboard.sendSOS')}</button>
-                            </div>
+                                </div>
+                            )}
+                            {sosSent && sosDeliveryState === 'cached' && (
+                                <div className="animate-slide-down bg-amber-950/90 border border-amber-500/50 rounded-xl p-4 flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center border border-amber-500/30"><span className="text-lg animate-pulse">📦</span></div>
+                                    <div>
+                                        <p className="text-amber-400 font-bold text-sm tracking-wide uppercase">Stored Offline</p>
+                                        <p className="text-amber-200/70 text-xs">Will auto-transmit when signal detected</p>
+                                    </div>
+                                </div>
+                            )}
+                            {sosSent && sosDeliveryState === 'sending' && (
+                                <div className="animate-slide-down bg-rose-950/90 border border-rose-500/50 rounded-xl p-4 flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-rose-500/20 flex items-center justify-center border border-rose-500/30">
+                                        <div className="w-4 h-4 border-2 border-rose-400 border-t-transparent rounded-full animate-spin" />
+                                    </div>
+                                    <div>
+                                        <p className="text-rose-400 font-bold text-sm tracking-wide uppercase">Transmitting SOS</p>
+                                        <p className="text-rose-200/70 text-xs">Scanning all available frequencies...</p>
+                                    </div>
+                                </div>
+                            )}
+                            {!sosSent && !alertDismissed && boatStatus.status === 'warning' && (
+                                <div className="animate-fade-in bg-amber-950/40 border border-amber-500/30 rounded-xl p-3 flex justify-between items-center backdrop-blur-sm">
+                                    <span className="text-amber-400 text-xs font-bold tracking-widest uppercase flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />Approaching Border
+                                    </span>
+                                    <button onClick={() => setAlertDismissed(true)} className="text-amber-500/50 hover:text-amber-400">✕</button>
+                                </div>
+                            )}
+                            {!sosSent && !alertDismissed && boatStatus.status === 'danger' && (
+                                <div className="animate-fade-in bg-rose-950/60 border border-rose-500/50 rounded-xl p-3 flex justify-between items-center backdrop-blur-sm">
+                                    <span className="text-rose-400 text-xs font-bold tracking-widest uppercase flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />Boundary Crossed
+                                    </span>
+                                    <button onClick={() => setAlertDismissed(true)} className="text-rose-500/50 hover:text-rose-400">✕</button>
+                                </div>
+                            )}
                         </div>
-                    ) : (
-                        <ActionButton label={t('dashboard.sosEmergency')} icon="🚨" variant="danger" fullWidth size="xl" onClick={() => setShowSosConfirm(true)} />
-                    )}
-                    <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                        <ActionButton label={t('dashboard.shareLocation')} icon="📍" variant="ocean" fullWidth size="md" onClick={handleShareLocation} />
-                        <ActionButton label={showFishZones ? t('dashboard.hideZones') : t('dashboard.fishZones')} icon="🐟" variant="aqua" fullWidth size="md" onClick={() => setShowFishZones(!showFishZones)} />
+
+                        {/* Location Error */}
+                        {locError && (
+                            <div className="animate-fade-in bg-slate-900/50 border border-rose-500/20 rounded-xl px-4 py-2 text-[10px] font-mono text-rose-300/80 flex items-center gap-2">
+                                <span className="text-rose-500">⚠</span>SIMULATION MODE: {locError}
+                            </div>
+                        )}
+
+                        {/* GPS Indicator */}
+                        {location?.accuracy && (
+                            <div className="flex justify-center">
+                                <div className="inline-flex items-center gap-2 bg-safe/10 border border-safe/20 px-3 py-1 rounded-full">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-safe animate-pulse" />
+                                    <span className="text-[10px] font-semibold text-safe">{t('dashboard.gpsActive')} · ±{Math.round(location.accuracy)}m</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Weather Widget */}
+                        <div className="animate-fade-in">
+                            <button
+                                onClick={() => setShowWeather(!showWeather)}
+                                className="w-full flex items-center justify-between py-3 px-4 bg-slate-900/40 rounded-xl border border-white/5 hover:bg-slate-800/60 hover:border-cyan-500/30 transition-all btn-press group"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20 group-hover:border-blue-500/50 transition-colors">
+                                        <span className="text-sm">🌊</span>
+                                    </div>
+                                    <p className="text-sm font-bold text-white group-hover:text-cyan-400 transition-colors">Sea Conditions</p>
+                                </div>
+                                <div className={`w-5 h-5 rounded-full bg-white/5 flex items-center justify-center text-[10px] text-slate-400 transition-transform duration-300 ${showWeather ? 'rotate-180 bg-cyan-500/20 text-cyan-400' : ''}`}>▼</div>
+                            </button>
+                            {showWeather && <div className="mt-2 animate-scale-in"><WeatherWidget location={location} /></div>}
+                        </div>
+
+                        {/* SOS Status Panel */}
+                        {showSOSPanel && (
+                            <div className="animate-scale-in border border-white/5 rounded-2xl bg-slate-900/30 p-3">
+                                <div className="flex items-center justify-between mb-2">
+                                    <h3 className="text-[13px] font-extrabold text-white">📡 SOS Delivery Status</h3>
+                                    <button onClick={() => setShowSOSPanel(false)} className="w-6 h-6 rounded-lg bg-white/10 flex items-center justify-center text-white/70 hover:bg-white/20 transition-all text-[10px]">✕</button>
+                                </div>
+                                <SOSStatusPanel />
+                            </div>
+                        )}
+
+                        {/* Quick Actions */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <ActionButton label={t('dashboard.shareLocation')} icon="📍" variant="ocean" fullWidth size="md" onClick={handleShareLocation} />
+                            <ActionButton label={showFishZones ? t('dashboard.hideZones') : t('dashboard.fishZones')} icon="🐟" variant="aqua" fullWidth size="md" onClick={() => setShowFishZones(!showFishZones)} />
+                        </div>
+
+                        {/* ── Mesh Chat + NMEA buttons ── */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setShowChat(true)}
+                                style={{
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    gap: '8px', padding: '12px',
+                                    background: 'linear-gradient(135deg, #1e293b, #0f172a)',
+                                    border: '1px solid rgba(6,182,212,0.25)',
+                                    borderRadius: '12px', cursor: 'pointer',
+                                    color: '#22d3ee', fontSize: '11px', fontWeight: '800',
+                                    letterSpacing: '0.08em',
+                                    transition: 'all 0.2s',
+                                    fontFamily: 'inherit',
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(6,182,212,0.6)'; e.currentTarget.style.background = 'linear-gradient(135deg, #164e63, #0f172a)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(6,182,212,0.25)'; e.currentTarget.style.background = 'linear-gradient(135deg, #1e293b, #0f172a)'; }}
+                            >
+                                <Radio size={16} />
+                                MESH CHAT
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setShowNMEA(true)}
+                                style={{
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    gap: '8px', padding: '12px',
+                                    background: 'linear-gradient(135deg, #0f1f0f, #0f172a)',
+                                    border: '1px solid rgba(34,197,94,0.25)',
+                                    borderRadius: '12px', cursor: 'pointer',
+                                    color: '#4ade80', fontSize: '11px', fontWeight: '800',
+                                    letterSpacing: '0.08em',
+                                    transition: 'all 0.2s',
+                                    fontFamily: 'inherit',
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(34,197,94,0.6)'; e.currentTarget.style.background = 'linear-gradient(135deg, #14532d, #0f172a)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(34,197,94,0.25)'; e.currentTarget.style.background = 'linear-gradient(135deg, #0f1f0f, #0f172a)'; }}
+                            >
+                                <Terminal size={16} />
+                                NMEA LOGS
+                            </button>
+                        </div>
+
+                        {shareMsg && (
+                            <div className="text-center text-xs font-bold text-emerald-400 animate-fade-in">{shareMsg}</div>
+                        )}
                     </div>
 
-                    {/* Advanced Tools Row */}
-                    <div className="grid grid-cols-2 gap-2 sm:gap-3 pt-2 border-t border-gray-100/50">
-                        <button
-                            onClick={() => setShowChat(true)}
-                            className="flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-slate-800 to-slate-900 border border-slate-700 text-cyan-400 rounded-xl hover:border-cyan-500/50 transition-all shadow-lg active:scale-95"
-                        >
-                            <Radio className="w-4 h-4" />
-                            <span className="text-xs font-bold tracking-wider">MESH CHAT</span>
-                        </button>
-                        <button
-                            onClick={() => setShowNMEA(true)}
-                            className="flex items-center justify-center gap-2 py-3 bg-slate-900 border border-slate-700 text-emerald-400 rounded-xl hover:border-emerald-500/50 transition-all shadow-lg active:scale-95"
-                        >
-                            <Terminal className="w-4 h-4" />
-                            <span className="text-xs font-bold tracking-wider">NMEA LOGS</span>
-                        </button>
+                    {/* Fixed SOS Button */}
+                    <div className="p-4 border-t border-white/10 bg-slate-950/50 backdrop-blur-md">
+                        {showSosConfirm ? (
+                            <div className="bg-danger/[0.06] border-2 border-danger/25 rounded-[20px] p-4 animate-scale-in">
+                                <p className="text-[14px] font-extrabold text-danger text-center mb-1">{t('dashboard.confirmSOS')}</p>
+                                <p className="text-[11px] text-text-secondary text-center mb-2">{t('dashboard.sosMessage')}</p>
+                                <div className="flex justify-center gap-3 mb-4">
+                                    {Object.entries({ internet: '🌐', satellite: '🛰️', ais: '📡' }).map(([key, icon]) => (
+                                        <div key={key} className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold ${channelAvailability[key] ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-400'}`}>
+                                            <span>{icon}</span>
+                                            <span className={`w-[5px] h-[5px] rounded-full ${channelAvailability[key] ? 'bg-green-500' : 'bg-red-400'}`} />
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button onClick={() => setShowSosConfirm(false)} className="py-3 bg-gray-100 text-text-primary font-bold text-[13px] rounded-xl hover:bg-gray-200 transition-colors">{t('dashboard.cancel')}</button>
+                                    <button onClick={handleSOS} className="py-3 text-white font-bold text-[13px] rounded-xl btn-gradient-danger">{t('dashboard.sendSOS')}</button>
+                                </div>
+                            </div>
+                        ) : (
+                            <ActionButton label={t('dashboard.sosEmergency')} icon="🚨" variant="danger" fullWidth size="xl" onClick={() => setShowSosConfirm(true)} />
+                        )}
                     </div>
                 </div>
             </div>
         </div>
     );
 }
-
-
